@@ -40,13 +40,7 @@ void setup() {
   Serial.begin(250000);
 
   // Print startup messages
-  Serial.println("LNAlert Cryogenic Liquid Level Remote Alarm" +
-                  "\ncreated by Keiran Cantilina" +
-                  
-                  "\n\nSoftware version 1.0, hardware revision A" + 
-                  "\nChip ID: "+String(ESP.getChipId() + 
-
-                   "\n\nConnecting to WIFI/SMTP...");
+  Serial.println(String("LNAlert Cryogenic Liquid Level Remote Alarm")+"\ncreated by Keiran Cantilina"+"\n\nSoftware version 1.0, hardware revision A"+"\nChip ID: "+String(ESP.getChipId()+"\n\nConnecting to WIFI/SMTP..."));
                    
   alert.connect(); // Connect to WiFi, then try to connect to SMTP server.
                    // If we fail with either, or they aren't configured,
@@ -79,7 +73,7 @@ void loop() {
   // If we weren't already alarming and now we are, update alarm status and send alarm.
   if (already_alarming == false && alarm_pins == true){
     send_alarm();
-    already_alarming = true
+    already_alarming = true;
   }
 
   delay(100); // Dunno exactly what the signal from the Thermo Locator Plus looks like, so 
@@ -106,7 +100,7 @@ void send_alarm(){
 
   // If sending message fails three times in a row, reboot
   if (success != "SENT"){
-    Serial.println("Failed to send alarm message 3 times. Rebooting to hopefully reconnect.")
+    Serial.println("Failed to send alarm message 3 times. Rebooting to hopefully reconnect.");
     ESP.restart();
   }
 }
@@ -114,6 +108,6 @@ void send_alarm(){
 
 // Interrupt routine that runs when the reset button is pressed
 ICACHE_RAM_ATTR void isr_handler() {
-  alert.reset(bool format == false);
+  alert.reset(false);
   ESP.restart();
 }
