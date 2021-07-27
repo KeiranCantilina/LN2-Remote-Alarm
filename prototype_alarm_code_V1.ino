@@ -5,7 +5,7 @@
 // Pin definitions
 #define RESET_PIN D7 // Pin that reset switch is connected to
 #define ALARM_PIN D6 // Pin that reads alarm state from the Thermo Locator Plus
-#define STATUS_LED D0 // Power status LED
+#define STATUS_LED D4 // Power status LED
 
 // Create alert and udp comms objects
 AlertMe alert;
@@ -27,7 +27,8 @@ bool alarm_pins = false;
 void setup() {
 
   // Start listening to the reset button pins
-  attachInterrupt(digitalPinToInterrupt(RESET_PIN), isr_handler, RISING);
+  pinMode(RESET_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(RESET_PIN), isr_handler, FALLING);
 
   // Set up other pins
   pinMode(ALARM_PIN,INPUT_PULLUP);
@@ -38,11 +39,17 @@ void setup() {
 
   // Start serial comms
   Serial.begin(250000);
-
+  delay(100);
+  
+  //alert.reset(false);
+  //alert.reset(true);
+  
   // Print startup messages
-  Serial.println(String("LNAlert Cryogenic Liquid Level Remote Alarm")+"\ncreated by Keiran Cantilina"+"\n\nSoftware version 1.0, hardware revision A"+"\nChip ID: "+String(ESP.getChipId()+"\n\nConnecting to WIFI/SMTP..."));
+  Serial.println("\nLNAlert Cryogenic Liquid Level Remote Alarm"); 
+  Serial.println("created by Keiran Cantilina \n\nSoftware version 1.0, hardware revision A \nChip ID: "+String(ESP.getChipId()));
+  Serial.println("\nConnecting to WiFi/SMTP...");
                    
-  alert.connect(); // Connect to WiFi, then try to connect to SMTP server.
+  alert.connect(true); // Connect to WiFi, then try to connect to SMTP server.
                    // If we fail with either, or they aren't configured,
                    // host an AP portal for configuration.
                    // alert.connect(true) enables printing WiFi debug info.
