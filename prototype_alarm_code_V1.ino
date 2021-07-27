@@ -21,7 +21,7 @@ String subject_line = "ALARM: Low N2 Level";
 String message = "";
 bool already_alarming = false;
 bool alarm_pins = false;
-
+bool connection_success = true;
 
 // Device initialization
 void setup() {
@@ -39,6 +39,7 @@ void setup() {
 
   // Start serial comms
   Serial.begin(250000);
+  //Serial.setDebugOutput(true);
   delay(100);
   
   //alert.reset(false);
@@ -48,13 +49,17 @@ void setup() {
   Serial.println("\nLNAlert Cryogenic Liquid Level Remote Alarm"); 
   Serial.println("created by Keiran Cantilina \n\nSoftware version 1.0, hardware revision A \nChip ID: "+String(ESP.getChipId()));
   Serial.println("\nConnecting to WiFi/SMTP...");
-                   
-  alert.connect(true); // Connect to WiFi, then try to connect to SMTP server.
-                   // If we fail with either, or they aren't configured,
-                   // host an AP portal for configuration.
-                   // alert.connect(true) enables printing WiFi debug info.
-                   // If the config AP sits for 5 minutes with no activity, we
-                   // try to connect again.
+  alert.debug(true);                 
+  connection_success = alert.connect(true); // Connect to WiFi, then try to connect to SMTP server.
+                                            // If we fail with either, or they aren't configured,
+                                            // host an AP portal for configuration.
+                                            // alert.connect(true) enables printing WiFi debug info.
+                                            // If the config AP sits for 3 minutes with no activity, we return FALSE.
+  // If the portal has timed out, reboot
+  if (!connection_success){
+    Serial.println("Config Portal Timeout: Rebooting");
+    ESP.restart();
+  }
 
   Serial.print("Connected!");
 
