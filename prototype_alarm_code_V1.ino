@@ -65,7 +65,8 @@ void setup() {
 
   // Connect to NTP time servers
   timeClient.begin();
-  Serial.println("Current timestamp is: " + timeClient.getFormattedTime()+ "\n");
+  timeClient.update();
+  Serial.println(" Current timestamp is: " + timeClient.getFormattedTime()+ "\n");
 }
 
 
