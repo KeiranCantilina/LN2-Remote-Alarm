@@ -1,6 +1,10 @@
+// TODO: Make the email text nicer. Lighten up the serial debug printing too. Get timestamps to work right.
+
 #include <NTPClient.h>
 #include <AlertMe.h>
 #include <WiFiUdp.h>
+#include <TimeLib.h>
+
 
 // Pin definitions
 #define RESET_PIN D7 // Pin that reset switch is connected to
@@ -14,7 +18,7 @@ WiFiUDP ntpUDP;
 // You can specify the time server pool and the offset (in seconds, can be
 // changed later with setTimeOffset() ). Additionally you can specify the
 // update interval (in milliseconds, can be changed using setUpdateInterval() ).
-NTPClient timeClient(ntpUDP, "us.pool.ntp.org", -3600, 60000); // EST timezone
+NTPClient timeClient(ntpUDP, "us.pool.ntp.org", 0, 60000); // UTC Time
 
 // Initialize globals
 String subject_line = "ALARM: Low N2 Level";
@@ -48,7 +52,7 @@ void setup() {
   // Print startup messages
   Serial.println("\nLNAlert Cryogenic Liquid Level Remote Alarm"); 
   Serial.println("created by Keiran Cantilina \n\nSoftware version 1.0, hardware revision A \nChip ID: "+String(ESP.getChipId()));
-  Serial.println("\nConnecting to WiFi/SMTP...");
+  Serial.print("\nConnecting to WiFi/SMTP...");
   alert.debug(true);                 
   connection_success = alert.connect(true); // Connect to WiFi, then try to connect to SMTP server.
                                             // If we fail with either, or they aren't configured,
@@ -61,12 +65,18 @@ void setup() {
     ESP.restart();
   }
 
-  Serial.print("Connected!");
+  Serial.println("Connected!");
 
   // Connect to NTP time servers
+  Serial.print("Connecting to time server...");
   timeClient.begin();
-  timeClient.update();
-  Serial.println(" Current timestamp is: " + timeClient.getFormattedTime()+ "\n");
+  if(timeClient.update()){
+    Serial.println("Connected!");
+  }
+  else{
+    Serial.print("Failed! :(");
+  }
+  Serial.println("Current timestamp is: " + current_timestamp() + "\n");
 }
 
 
@@ -103,19 +113,39 @@ void send_alarm(){
 
   // If we still have attempts left and messaging success has yet to be achieved, try to send message
   while (attempts <3 && success!="SENT"){
-    message = "Low LN2 level alarm sounded at " + timeClient.getFormattedTime() + 
-    "\nThis was email sent from a LNAlert device with Chip ID "+String(ESP.getChipId()) + 
-    ". \n(Software ver. 1.0, hardware rev. A)";
+    message = "Low LN2 level alarm sounded at " + current_timestamp() + 
+    ".<br>This email was sent from an LNAlert device with Chip ID "+ String(ESP.getChipId()) + 
+    ". <br>(Software ver. 1.0, hardware rev. A)";
     Serial.println("Alarm detected! Sending Email...");
     success = alert.send(subject_line, message); // alert.send() returns "SENT" on success, or a specific error message on failure
     Serial.print(success);
   }
 
-  // If sending message fails three times in a row, reboot
+  // If sending message fails three times in a row, reboot 
+  // (don't worry, message sending will get triggered again if Thermo Locator Plus is still alarming)
   if (success != "SENT"){
     Serial.println("Failed to send alarm message 3 times. Rebooting to hopefully reconnect.");
     ESP.restart();
   }
+}
+
+
+// Get NTP time and convert to timestamp
+String current_timestamp(){
+  time_t utcCalc = timeClient.getEpochTime();
+  return String(hour(utcCalc)) + ":" + String(minute(utcCalc)) + ":" + String(second(utcCalc)) + " UTC on " + String(day(utcCalc)) + " " + monthString(month(utcCalc)) + " " + String(year(utcCalc));
+}
+
+
+// Convert integer month to word month
+String monthString(int monthInt){
+  String monthStringArray[12] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+  for (int i = 1; i<13; i++){
+    if(monthInt == i){
+      return monthStringArray[i-1];
+    }
+  }
+  return "MONTH ERROR";
 }
 
 
